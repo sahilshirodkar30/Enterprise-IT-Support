@@ -1,0 +1,26 @@
+[project]
+name = "enterprise-it-support"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.162.7",
+    "flashrank>=0.2.10",
+    "langchain-core>=1.8.0",
+    "langchain-openai>=1.8.0",
+    "langgraph>=1.2.22",
+    "logfire>=5.6.0",
+    "nemoguardrails>=0.24.1",
+    "openai>=3.51.0",
+    "pinecone>=10.3.0",
+    "portkey-ai>=2.3.4",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.3",
+    "pypdf>=7.1.0",
+    "pytest>=9.2.0",
+    "python-docx>=1.2.0",
+    "python-dotenv>=1.2.4",
+    "streamlit>=1.67.0",
+    "uvicorn>=0.54.0",
+]

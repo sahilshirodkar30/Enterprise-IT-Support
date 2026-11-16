@@ -1,0 +1,97 @@
+from contextlib import asynccontextmanager
+from uuid import uuid4
+
+import logfire
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from langchain_core.messages import HumanMessage
+from pydantic import BaseModel, Field
+
+from app.agents.nodes.graph import get_graph
+from app.agents.messages import DEGRADED
+from app.config import get_settings
+from app.observability import configure_observability
+from services.pinecone_store import ensure_index
+
+THREAD_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
+MAX_MESSAGE_CHARS = 4000  # keep equal to input_guard.MAX_INPUT_CHARS
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+    thread_id: str = Field(
+        default_factory=lambda: uuid4().hex,
+        pattern=THREAD_ID_PATTERN,
+    )
+
+
+class ChatResponse(BaseModel):
+    thread_id: str
+    answer: str
+    blocked: bool
+    degraded: bool
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Fail fast at startup rather than on the first request.
+    configure_observability()
+    ensure_index()
+    app.state.graph = get_graph()
+    yield
+
+
+app = FastAPI(
+    title="NovaRetail Enterprise IT Support",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+def current_user(x_dev_user: str | None = Header(default=None)) -> str:
+    """
+    Resolve the caller's identity. Thread ownership depends on this value.
+
+    PLACEHOLDER: replace with validation of your SSO or JWT bearer token
+    and return the verified user id. The development bypass below is only
+    honoured when APP_ENV is "development".
+    """
+    if get_settings().APP_ENV == "development" and x_dev_user:
+        return x_dev_user
+    raise HTTPException(status_code=401, detail="authentication required")
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
+
+
+# Sync def: the graph and its LLM and Pinecone calls are blocking, so FastAPI
+# runs this in a worker thread instead of blocking the event loop.
+@app.post("/chat", response_model=ChatResponse)
+def chat(
+    body: ChatRequest,
+    request: Request,
+    user: str = Depends(current_user),
+) -> ChatResponse:
+    graph = request.app.state.graph
+    # Scope the thread to the user so one user cannot continue another's conversation.
+    thread_key = f"{user}:{body.thread_id}"
+
+    try:
+        result = graph.invoke(
+            {"messages": [HumanMessage(content=body.message)]},
+            config={"configurable": {"thread_id": thread_key}},
+        )
+    except Exception:
+        logfire.exception("chat turn failed", thread_id=body.thread_id)
+        raise HTTPException(
+            status_code=503,
+            detail="The IT support assistant is temporarily unavailable.",
+        )
+
+    return ChatResponse(
+        thread_id=body.thread_id,
+        answer=result.get("answer") or DEGRADED,
+        blocked=bool(result.get("blocked")),
+        degraded=bool(result.get("degraded")),
+    )

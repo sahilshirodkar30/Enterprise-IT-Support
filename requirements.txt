@@ -1,0 +1,39 @@
+ # UI
+streamlit
+
+# Orchestration
+langgraph
+langchain-core
+langchain-openai
+
+portkey-ai   
+# Vector DB and embeddings
+pinecone
+
+# Reranking (local, no API key)
+flashrank
+
+# Guardrails
+nemoguardrails
+
+# Observability
+logfire
+
+# Gateway and config
+openai
+pydantic
+pydantic-settings
+python-dotenv
+
+
+pypdf
+python-docx
+python-dotenv
+
+
+# Testing
+pytest
+
+# API
+fastapi
+uvicorn
