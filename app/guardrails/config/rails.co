@@ -1,27 +1,4 @@
-
-# GoaGuide AI - Colang 1.0 rules
-
-# -------------------------------------------------
-# DEFAULT REFUSAL
-# -------------------------------------------------
+# NovaRetail IT Support - Colang 1.0 rules
 
 define bot refuse to respond
-    "Sorry, I can only help with Goa travel-related questions. I cannot process this request."
-
-# -------------------------------------------------
-# FACT CHECKING
-# -------------------------------------------------
-
-define subflow self check facts
-
-    if $check_facts == True
-
-        $check_facts = False
-
-        $accuracy = execute self_check_facts
-
-        if $accuracy < 0.5
-
-            bot refuse to respond
-
-            stop
+    "I can only help with NovaRetail IT support questions. I cannot process this request."

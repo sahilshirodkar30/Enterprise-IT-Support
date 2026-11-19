@@ -6,18 +6,6 @@ from portkey_ai import createHeaders
 from app.config import get_settings
 
 
-def _gateway_config(s) -> dict:
-    # Verify the target format against your Portkey version's fallback docs.
-    return {
-        "strategy": {"mode": "fallback"},
-        "retry": {"attempts": 2, "on_status_codes": [429, 503]},
-        "targets": [
-            {"override_params": {"model": f"@{s.GROQ_SLUG}/{s.GROQ_MODEL_NAME}"}},
-            {"override_params": {"model": f"@{s.DEEPSEEK_SLUG}/{s.DEEPSEEK_MODEL_NAME}"}},
-        ],
-    }
-
-
 @lru_cache(maxsize=None)
 def get_llm(feature: str = "rag", max_tokens: int | None = None,
             temperature: float = 0.0) -> ChatOpenAI:
@@ -26,20 +14,20 @@ def get_llm(feature: str = "rag", max_tokens: int | None = None,
     key = s.PORTKEY_GATEWAY_API_KEY.get_secret_value()
 
     return ChatOpenAI(
+    api_key=key,
+    base_url=s.PORTKEY_GATEWAY_URL,
+    model=s.GROQ_MODEL_NAME,  # plain name; the saved config's targets route the request
+    temperature=temperature,
+    max_tokens=max_tokens,
+    timeout=30,
+    max_retries=0,
+    default_headers=createHeaders(
         api_key=key,
-        base_url=s.PORTKEY_GATEWAY_URL,
-        model=f"@{s.GROQ_SLUG}/{s.GROQ_MODEL_NAME}",
-        temperature=temperature,
-        max_tokens=max_tokens,
-        timeout=30,
-        max_retries=0,  # the gateway handles retries and failover
-        default_headers=createHeaders(
-            api_key=key,
-            config=_gateway_config(s),
-            metadata={
-                "feature": feature,
-                "_user": "it-support-service",
-                "environment": s.APP_ENV,
-            },
-        ),
+        config=s.PORTKEY_CONFIG_SLUG,
+        metadata={
+            "feature": feature,
+            "_user": "it-support-service",
+            "environment": s.APP_ENV,
+        },
+    ),
     )

@@ -1,8 +1,8 @@
 import logfire
 
 from app.agents.state import ChatState
-from app.config import get_settings
 from app.guardrails.document_guard import sanitize_chunks
+from app.config import get_settings
 from services.embedding import embed_queries
 from services.pinecone_store import get_index
 from services.reranking import rerank
@@ -36,7 +36,14 @@ def retrieve_node(state: ChatState) -> dict:
             "score": m.score,
         })
 
-    chunks = rerank(query, candidates, top_n=s.RETRIEVAL_KEEP)
+    if not candidates:
+        return {"chunks": [], "degraded": False}
+
+    try:
+        chunks = rerank(query, candidates, top_n=s.RETRIEVAL_KEEP)
+    except Exception:
+        logfire.exception("rerank failed")
+        return {"chunks": [], "degraded": True}
 
     if s.RERANK_MIN_SCORE is not None:
         chunks = [

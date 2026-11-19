@@ -4,8 +4,10 @@ import logfire
 
 from app.guardrails.patterns import has_injection, normalise
 
-_CONTEXT_TAG = re.compile(r"</?\s*(context|excerpts?)\s*>", re.IGNORECASE)
-
+_CONTEXT_TAG = re.compile(
+    r"</?\s*(context|excerpts?|answer|message|evidence)\s*>",
+    re.IGNORECASE,
+)
 
 def sanitize_chunks(chunks: list[dict]) -> list[dict]:
     """

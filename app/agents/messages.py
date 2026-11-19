@@ -1,5 +1,3 @@
-from langchain_core.messages import AIMessage
-
 NOT_FOUND = (
     "I couldn't find this in the IT support documentation. "
     "Please contact the IT Service Desk for help."
@@ -14,13 +12,20 @@ DEGRADED = (
     "The IT support assistant is temporarily unavailable. "
     "Please try again shortly or contact the IT Service Desk."
 )
+CREDENTIAL_WARNING = (
+    "For your security, don't share passwords or codes here. "
+    "The IT Service Desk will never ask for them."
+)
+# Replies that were not generated from retrieved content. Never cache or cite these.
+FALLBACK_REPLIES = frozenset({
+    NOT_FOUND, OUT_OF_SCOPE, INPUT_REFUSAL, UNVERIFIED, DEGRADED, CREDENTIAL_WARNING,
+})
 
 
 def final_reply(text: str, *, blocked: bool = False, degraded: bool = False) -> dict:
-    """A terminal state update. Downstream guards skip finalized replies."""
+    """Terminal state update. remember_node writes the AIMessage to history."""
     return {
         "answer": text,
-        "messages": [AIMessage(content=text)],
         "blocked": blocked,
         "degraded": degraded,
         "finalized": True,

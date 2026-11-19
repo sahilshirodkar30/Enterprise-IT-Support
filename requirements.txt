@@ -37,3 +37,4 @@ pytest
 # API
 fastapi
 uvicorn
+logfire[fastapi]

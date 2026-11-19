@@ -48,9 +48,10 @@ def _history_text(messages) -> str:
 
 def planner_node(state: ChatState) -> dict:
     question = state["question"]
+    safe_question = question.replace("<message>", "").replace("</message>", "")
     prompt = PLANNER_PROMPT.format(
         history=_history_text(state["messages"]),
-        question=question,
+        question=safe_question,
     )
 
     try:
@@ -61,6 +62,7 @@ def planner_node(state: ChatState) -> dict:
 
     first = raw.splitlines()[0].strip() if raw else ""
     upper = first.upper()
+    print("upper",upper)
 
     if upper.startswith("CONVERSATIONAL"):
         route, query = "conversational", ""
@@ -73,5 +75,6 @@ def planner_node(state: ChatState) -> dict:
         route, query = "technical", question[:MAX_QUERY_CHARS]
 
     # Log the route only, never the message text.
+    print("route:",route)
     logfire.info("planner decided", route=route)
     return {"route": route, "search_query": query}

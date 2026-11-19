@@ -1,9 +1,10 @@
 import logfire
 
 from app.guardrails.exceptions import GuardrailBlocked
-from app.guardrails.patterns import has_injection, normalise, redact_cards
+from app.guardrails.patterns import contains_secret, has_injection, normalise, redact_cards
 
-MAX_INPUT_CHARS = 4000
+# Single source of truth for the question length limit. graph.py imports this.
+MAX_QUESTION_CHARS = 1000
 
 
 def check_user_input(text: object) -> str:
@@ -14,10 +15,14 @@ def check_user_input(text: object) -> str:
     cleaned = normalise(text).strip()
     if not cleaned:
         raise GuardrailBlocked("empty")
-    if len(cleaned) > MAX_INPUT_CHARS:
+    if len(cleaned) > MAX_QUESTION_CHARS:
         raise GuardrailBlocked("too_long")
     if has_injection(cleaned):
         logfire.warn("input withheld", reason="injection_pattern")
         raise GuardrailBlocked("injection_pattern")
+    if contains_secret(cleaned):
+        # Keep credentials out of the LLM, the planner, and thread history.
+        logfire.warn("input withheld", reason="credential_in_message")
+        raise GuardrailBlocked("credential_in_message")
 
     return redact_cards(cleaned)

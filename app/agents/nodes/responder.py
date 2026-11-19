@@ -31,7 +31,7 @@ Reply briefly and politely. Use only the conversation so far for facts about the
 user's issue. If the answer is not in the conversation, say you don't have that
 information. Never ask for passwords, MFA codes, or API keys."""
 
-
+NOT_IN_DOCS_TOKEN = "NOT_IN_DOCS"
 @lru_cache(maxsize=1)
 def _llm():
     return get_llm(feature="responder", max_tokens=700)
@@ -77,5 +77,8 @@ def respond_node(state: ChatState) -> dict:
         logfire.exception("generation failed")
         return final_reply(DEGRADED, degraded=True)
 
+    # The model signals "not in the excerpts" with a token. Map it to the user-facing message.
+    if route == "technical" and answer.rstrip(".") == NOT_IN_DOCS_TOKEN:
+        return final_reply(NOT_FOUND)
     # Not finalized yet: output_guard_node validates and sends the reply.
     return {"answer": answer, "degraded": False, "finalized": False}

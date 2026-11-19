@@ -13,7 +13,8 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
+    DEV_AUTH_TOKEN: SecretStr | None = None
+    DEV_USER_ID: str = "dev.user@novaretail.local"
     APP_ENV: str = "development"
     SERVICE_NAME: str = "enterprise-it-support"
 
@@ -33,11 +34,15 @@ class Settings(BaseSettings):
     GROQ_MODEL_NAME: str
     DEEPSEEK_SLUG: str
     DEEPSEEK_MODEL_NAME: str
+    PORTKEY_CONFIG_SLUG: str
 
     # Observability
     LOGFIRE_API_KEY: SecretStr
 
-    INGEST_PATH: Path = ROOT / "data" / "sample_kb"
+    INGEST_PATH: Path = ROOT / "DATA" / "sample_kb"   # match the actual folder name
+
+    CACHE_TTL_SECONDS: int = Field(default=7 * 24 * 3600, gt=0)
+    CACHE_SIMILARITY: float = Field(default=0.95, ge=0.0, le=1.0)
 
     # Retrieval
     RETRIEVAL_CANDIDATES: int = Field(default=10, ge=1, le=100)
