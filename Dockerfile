@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
 # Copy application folders
 COPY app ./app
 COPY frontend ./frontend
+COPY services ./services
 
 # Run as non-root user
 USER enterpriseai
