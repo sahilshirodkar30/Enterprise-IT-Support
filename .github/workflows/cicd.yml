@@ -7,7 +7,6 @@ on:
       - main
     paths-ignore:
       - README.md
-
   workflow_dispatch:
 
 permissions:
@@ -38,7 +37,7 @@ jobs:
 
       - name: Check Python Syntax
         run: |
-          python -m compileall -q app worker scripts
+          python -m compileall -q app frontend
 
   # ==========================================
   # 2. BUILD AND PUSH DOCKER IMAGE TO ECR
@@ -74,20 +73,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          test -n "$ECR_REGISTRY"
-          test -n "$ECR_REPOSITORY"
+          if [[ -z "$ECR_REGISTRY" || -z "$ECR_REPOSITORY" ]]; then
+            echo "::error::ECR registry or repository is empty"
+            exit 1
+          fi
 
-          IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
 
           echo "Building Docker image..."
-
           docker build -t "$IMAGE" .
 
-          echo "Pushing image to ECR..."
-
+          echo "Pushing Docker image to ECR..."
           docker push "$IMAGE"
 
-          echo "Image pushed successfully: $IMAGE"
+          echo "Docker image pushed successfully"
 
   # ==========================================
   # 3. DEPLOY APPLICATION TO EC2
@@ -96,21 +95,14 @@ jobs:
   continuous-deployment:
     name: Deploy to EC2
     needs: build-and-push-ecr-image
-
     runs-on: [self-hosted, linux, x64]
     environment: production
 
     steps:
 
-      # ----------------------------------------
-      # AWS AUTHENTICATION
-      # EC2 INSTANCE IAM ROLE IS USED HERE
-      # ----------------------------------------
-
       - name: Verify EC2 IAM Role
         run: |
           set -euo pipefail
-
           aws sts get-caller-identity
 
       # ----------------------------------------
@@ -119,13 +111,17 @@ jobs:
 
       - name: Construct ECR Image URI
         id: image
-
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
 
         run: |
           set -euo pipefail
+
+          if [[ -z "$AWS_REGION" || -z "$ECR_REPOSITORY" ]]; then
+            echo "::error::AWS_REGION or ECR_REPOSITORY is empty"
+            exit 1
+          fi
 
           ACCOUNT_ID=$(aws sts get-caller-identity \
             --query Account \
@@ -178,68 +174,6 @@ jobs:
           echo "Docker image pulled successfully"
 
       # ----------------------------------------
-      # VALIDATE APPLICATION SECRETS
-      # ----------------------------------------
-
-      - name: Validate Application Secrets
-
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
-
-          BEDROCK_EMBED_MODEL: ${{ secrets.BEDROCK_EMBED_MODEL }}
-          BEDROCK_CHAT_MODEL: ${{ secrets.BEDROCK_CHAT_MODEL }}
-          EMBED_DIM: ${{ secrets.EMBED_DIM }}
-
-          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
-          PINECONE_CLOUD: ${{ secrets.PINECONE_CLOUD }}
-          PINECONE_REGION: ${{ secrets.PINECONE_REGION }}
-          PINECONE_READY_TIMEOUT: ${{ secrets.PINECONE_READY_TIMEOUT }}
-
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-          RIUS_API_KEY: ${{ secrets.RIUS_API_KEY }}
-          RIUS_SERVICE_NAME: ${{ secrets.RIUS_SERVICE_NAME }}
-          RIUS_DISABLED: ${{ secrets.RIUS_DISABLED }}
-          RIUS_CAPTURE_CONTENT: ${{ secrets.RIUS_CAPTURE_CONTENT }}
-
-          HITL_ENABLED: ${{ secrets.HITL_ENABLED }}
-          MEMORY_TURNS: ${{ secrets.MEMORY_TURNS }}
-
-        run: |
-          set -euo pipefail
-
-          REQUIRED=(
-            AWS_REGION
-            S3_BUCKET
-            BEDROCK_EMBED_MODEL
-            BEDROCK_CHAT_MODEL
-            EMBED_DIM
-            PINECONE_API_KEY
-            PINECONE_INDEX_NAME
-            PINECONE_CLOUD
-            PINECONE_REGION
-            PINECONE_READY_TIMEOUT
-            DATABASE_URL
-            RIUS_API_KEY
-            RIUS_SERVICE_NAME
-            RIUS_DISABLED
-            RIUS_CAPTURE_CONTENT
-            HITL_ENABLED
-            MEMORY_TURNS
-          )
-
-          for name in "${REQUIRED[@]}"; do
-            if [ -z "${!name:-}" ]; then
-              echo "::error::Missing secret: $name"
-              exit 1
-            fi
-          done
-
-          echo "All required application secrets are available"
-
-      # ----------------------------------------
       # CREATE DOCKER NETWORK
       # ----------------------------------------
 
@@ -264,32 +198,34 @@ jobs:
       # ----------------------------------------
 
       - name: Start FastAPI Container
-
         env:
           IMAGE: ${{ steps.image.outputs.image }}
 
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          APP_ENV: ${{ secrets.APP_ENV }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          DEV_AUTH_TOKEN: ${{ secrets.DEV_AUTH_TOKEN }}
 
-          BEDROCK_EMBED_MODEL: ${{ secrets.BEDROCK_EMBED_MODEL }}
-          BEDROCK_CHAT_MODEL: ${{ secrets.BEDROCK_CHAT_MODEL }}
-          EMBED_DIM: ${{ secrets.EMBED_DIM }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL_NAME: ${{ secrets.GROQ_MODEL_NAME }}
+          GROQ_SLUG: ${{ secrets.GROQ_SLUG }}
+
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL_NAME: ${{ secrets.DEEPSEEK_MODEL_NAME }}
+          DEEPSEEK_SLUG: ${{ secrets.DEEPSEEK_SLUG }}
+
+          PORTKEY_CONFIG_SLUG: ${{ secrets.PORTKEY_CONFIG_SLUG }}
+          PORTKEY_GATEWAY_API_KEY: ${{ secrets.PORTKEY_GATEWAY_API_KEY }}
+          PORTKEY_GATEWAY_URL: ${{ secrets.PORTKEY_GATEWAY_URL }}
+
+          EMBEDDING_MODEL_NAME: ${{ secrets.EMBEDDING_MODEL_NAME }}
+          EMBEDDING_MODEL_DIMENSION: ${{ secrets.EMBEDDING_MODEL_DIMENSION }}
 
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
           PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
-          PINECONE_CLOUD: ${{ secrets.PINECONE_CLOUD }}
-          PINECONE_REGION: ${{ secrets.PINECONE_REGION }}
-          PINECONE_READY_TIMEOUT: ${{ secrets.PINECONE_READY_TIMEOUT }}
 
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-          RIUS_API_KEY: ${{ secrets.RIUS_API_KEY }}
-          RIUS_SERVICE_NAME: ${{ secrets.RIUS_SERVICE_NAME }}
-          RIUS_DISABLED: ${{ secrets.RIUS_DISABLED }}
-          RIUS_CAPTURE_CONTENT: ${{ secrets.RIUS_CAPTURE_CONTENT }}
-
-          HITL_ENABLED: ${{ secrets.HITL_ENABLED }}
-          MEMORY_TURNS: ${{ secrets.MEMORY_TURNS }}
+          LOGFIRE_API_KEY: ${{ secrets.LOGFIRE_API_KEY }}
 
         run: |
           set -euo pipefail
@@ -300,26 +236,30 @@ jobs:
             --network atlas-network \
             --network-alias api \
             -p 8000:8000 \
+            -e APP_ENV \
+            -e API_TOKEN \
+            -e DEV_AUTH_TOKEN \
             -e AWS_REGION \
             -e AWS_DEFAULT_REGION="$AWS_REGION" \
-            -e S3_BUCKET \
-            -e BEDROCK_EMBED_MODEL \
-            -e BEDROCK_CHAT_MODEL \
-            -e EMBED_DIM \
+            -e GROQ_API_KEY \
+            -e GROQ_MODEL_NAME \
+            -e GROQ_SLUG \
+            -e DEEPSEEK_API_KEY \
+            -e DEEPSEEK_MODEL_NAME \
+            -e DEEPSEEK_SLUG \
+            -e PORTKEY_CONFIG_SLUG \
+            -e PORTKEY_GATEWAY_API_KEY \
+            -e PORTKEY_GATEWAY_URL \
+            -e EMBEDDING_MODEL_NAME \
+            -e EMBEDDING_MODEL_DIMENSION \
             -e PINECONE_API_KEY \
             -e PINECONE_INDEX_NAME \
-            -e PINECONE_CLOUD \
-            -e PINECONE_REGION \
-            -e PINECONE_READY_TIMEOUT \
-            -e DATABASE_URL \
-            -e RIUS_API_KEY \
-            -e RIUS_SERVICE_NAME \
-            -e RIUS_DISABLED \
-            -e RIUS_CAPTURE_CONTENT \
-            -e HITL_ENABLED \
-            -e MEMORY_TURNS \
+            -e LOGFIRE_API_KEY \
             "$IMAGE" \
-            uvicorn app.main:app --host 0.0.0.0 --port 8000
+            uvicorn app.api:app \
+              --host 0.0.0.0 \
+              --port 8000 \
+              --proxy-headers
 
           echo "FastAPI container started"
 
@@ -328,11 +268,11 @@ jobs:
       # ----------------------------------------
 
       - name: Start Streamlit Container
-
         env:
           IMAGE: ${{ steps.image.outputs.image }}
-
           API_URL: http://api:8000
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          DEV_AUTH_TOKEN: ${{ secrets.DEV_AUTH_TOKEN }}
 
         run: |
           set -euo pipefail
@@ -343,8 +283,10 @@ jobs:
             --network atlas-network \
             -p 8501:8501 \
             -e API_URL \
+            -e API_TOKEN \
+            -e DEV_AUTH_TOKEN \
             "$IMAGE" \
-            streamlit run ui/app.py \
+            streamlit run frontend/streamlit_UI.py \
               --server.address 0.0.0.0 \
               --server.port 8501 \
               --server.headless true
@@ -372,9 +314,7 @@ jobs:
           done
 
           echo "::error::FastAPI health check failed"
-
           docker logs --tail 100 atlas-enterprise-api
-
           exit 1
 
       # ----------------------------------------
@@ -398,23 +338,20 @@ jobs:
           done
 
           echo "::error::Streamlit health check failed"
-
           docker logs --tail 100 atlas-enterprise-ui
-
           exit 1
 
       # ----------------------------------------
-      # SHOW RUNNING CONTAINERS
+      # DEPLOYMENT STATUS
       # ----------------------------------------
 
       - name: Deployment Status
         run: |
           docker ps
-
           echo "Enterprise AI deployment completed successfully"
 
       # ----------------------------------------
-      # CLEANUP OLD DOCKER IMAGES
+      # CLEANUP
       # ----------------------------------------
 
       - name: Clean Unused Docker Images
