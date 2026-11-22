@@ -97,7 +97,7 @@ jobs:
     name: Deploy to EC2
     needs: build-and-push-ecr-image
 
-    runs-on: [self-hosted, linux, x64, atlas-ec2]
+    runs-on: [self-hosted, linux, x64]
     environment: production
 
     steps:
