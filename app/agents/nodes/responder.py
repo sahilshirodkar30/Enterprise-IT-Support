@@ -50,7 +50,7 @@ def _history(messages) -> list:
 
 def respond_node(state: ChatState) -> dict:
     route = state.get("route")
-
+    
     if route == "out_of_scope":
         return final_reply(OUT_OF_SCOPE)
 
@@ -69,10 +69,12 @@ def respond_node(state: ChatState) -> dict:
         *_history(state["messages"]),
         HumanMessage(content=state["question"]),
     ]
+    
 
     try:
         with logfire.span("generate", route=route):
             answer = str(_llm().invoke(messages).content).strip()
+            
     except Exception:
         logfire.exception("generation failed")
         return final_reply(DEGRADED, degraded=True)
@@ -81,4 +83,6 @@ def respond_node(state: ChatState) -> dict:
     if route == "technical" and answer.rstrip(".") == NOT_IN_DOCS_TOKEN:
         return final_reply(NOT_FOUND)
     # Not finalized yet: output_guard_node validates and sends the reply.
+
+    
     return {"answer": answer, "degraded": False, "finalized": False}

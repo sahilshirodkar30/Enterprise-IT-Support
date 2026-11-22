@@ -62,6 +62,7 @@ def cache_node(state: ChatState) -> dict:
         span.set_attribute("hit", bool(raw))
         span.set_attribute("duration_ms", round((time.perf_counter() - start) * 1000, 1))
 
+    
     if not raw:
         logfire.info("cache miss")
         return {"cached": False}
@@ -94,6 +95,8 @@ def remember_node(state: ChatState) -> dict:
     blocked = bool(state.get("blocked"))
     cached = bool(state.get("cached"))
     is_fallback = blocked or answer in FALLBACK_REPLIES
+
+    print("\n\n\n Remenber layer: ",answer)
 
     if is_fallback:
         sources: list[str] = []

@@ -27,7 +27,11 @@ Reply with exactly one word: yes or no.
 
 @lru_cache(maxsize=1)
 def _grounding_llm():
-    return get_llm(feature="grounding_check", max_tokens=3)
+    return get_llm(
+        feature="grounding_check",
+        max_tokens=256,
+        reasoning_effort="low",
+    )
 
 
 def _is_yes(verdict: str) -> bool:
@@ -37,6 +41,7 @@ def _is_yes(verdict: str) -> bool:
 
 
 def validate_answer(answer: str, route: str, chunks: list[dict]) -> str:
+    
     if not answer or not answer.strip():
         raise GuardrailBlocked("empty")
 
@@ -72,7 +77,16 @@ def validate_answer(answer: str, route: str, chunks: list[dict]) -> str:
     except Exception as exc:
         raise GuardrailUnavailable("grounding check failed") from exc
 
-    if not _is_yes(str(result.content)):
+    print("GROUNDING RESULT:", result)
+    print("CONTENT:", repr(result.content))
+    print("RESPONSE METADATA:", result.response_metadata)
+    print("USAGE:", result.usage_metadata)
+    verdict = str(result.content).strip()
+
+    if not verdict:
+        raise GuardrailUnavailable("grounding model returned an empty response")
+
+    if not _is_yes(verdict):
         raise GuardrailBlocked("not_grounded")
 
     return answer

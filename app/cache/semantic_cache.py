@@ -62,5 +62,20 @@ def cache_put(question: str, payload: str) -> None:
         logfire.exception("cache write failed")
 
 def cache_clear() -> None:
-    """Drop every cached answer. Call after the corpus changes."""
-    get_index().delete(delete_all=True, namespace=NAMESPACE)
+    """Drop cached answers if the index and namespace exist."""
+
+    index = get_index()
+
+    stats = index.describe_index_stats()
+
+    # Check whether namespace exists
+    if NAMESPACE not in stats.namespaces:
+        print(f"Namespace '{NAMESPACE}' does not exist.")
+        return
+
+    index.delete(
+        delete_all=True,
+        namespace=NAMESPACE
+    )
+
+    print(f"Cache cleared: {NAMESPACE}")

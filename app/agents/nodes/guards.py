@@ -60,7 +60,7 @@ def input_guard_node(state: ChatState) -> dict:
         updates["messages"] = [
             HumanMessage(content=clean, id=last.id)
         ]
-
+    
     return updates
 
 
@@ -69,12 +69,15 @@ def output_guard_node(state: ChatState) -> dict:
         return {}
 
     route = state.get("route")
+    
     chunks = state.get("chunks") or []
+    
 
     try:
         validated = validate_answer(state.get("answer", ""), route, chunks)
-
+        
     except GuardrailBlocked as exc:
+        print("GUARDRAIL BLOCK REASON:", str(exc))
         logfire.warn("Answer withheld", reason=str(exc), route=route)
         return final_reply(UNVERIFIED, blocked=True)
 

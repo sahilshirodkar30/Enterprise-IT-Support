@@ -50,5 +50,5 @@ def retrieve_node(state: ChatState) -> dict:
             c for c in chunks
             if c.get("rerank_score") is None or c["rerank_score"] >= s.RERANK_MIN_SCORE
         ]
-
+    
     return {"chunks": sanitize_chunks(chunks), "degraded": False}
