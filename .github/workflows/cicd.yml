@@ -286,7 +286,7 @@ jobs:
             -e API_TOKEN \
             -e DEV_AUTH_TOKEN \
             "$IMAGE" \
-            streamlit run frontend/streamlit_UI.py \
+            streamlit run frontend/streamlit_app.py \
               --server.address 0.0.0.0 \
               --server.port 8501 \
               --server.headless true
