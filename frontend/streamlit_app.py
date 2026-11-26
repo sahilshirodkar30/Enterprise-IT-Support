@@ -19,7 +19,7 @@ import requests
 import streamlit as st
 from dotenv import load_dotenv
 
-from app.config import get_settings
+from app.config import get_frontend_settings
 
 
 # --------------------------------------------------
@@ -28,7 +28,7 @@ from app.config import get_settings
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-settings = get_settings()
+settings = get_frontend_settings()
 
 API_URL = settings.API_URL.rstrip("/")
 API_TOKEN = settings.API_TOKEN

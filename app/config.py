@@ -1,3 +1,4 @@
+
 from functools import lru_cache
 from pathlib import Path
 
@@ -6,13 +7,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parent.parent
 
+COMMON_CONFIG = {
+    "env_file": ROOT / ".env",
+    "env_file_encoding": "utf-8",
+    "extra": "ignore",
+}
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=ROOT / ".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
+    """Backend configuration for FastAPI."""
+
+    model_config = SettingsConfigDict(**COMMON_CONFIG)
+
     DEV_AUTH_TOKEN: SecretStr | None = None
     DEV_USER_ID: str = "dev.user@novaretail.local"
     APP_ENV: str = "development"
@@ -27,7 +33,7 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL_NAME: str
     EMBEDDING_MODEL_DIMENSION: int = Field(gt=0)
 
-    # Portkey gateway. Provider keys live in Portkey, not in this app.
+    # Portkey
     PORTKEY_GATEWAY_URL: str
     PORTKEY_GATEWAY_API_KEY: SecretStr
     GROQ_SLUG: str
@@ -39,33 +45,54 @@ class Settings(BaseSettings):
     # Observability
     LOGFIRE_API_KEY: SecretStr
 
-    INGEST_PATH: Path = ROOT / "DATA" / "sample_kb"   # match the actual folder name
+    # Application
+    INGEST_PATH: Path = ROOT / "DATA" / "sample_kb"
 
+    # Cache
     CACHE_TTL_SECONDS: int = Field(default=7 * 24 * 3600, gt=0)
     CACHE_SIMILARITY: float = Field(default=0.95, ge=0.0, le=1.0)
 
     # Retrieval
     RETRIEVAL_CANDIDATES: int = Field(default=10, ge=1, le=100)
     RETRIEVAL_KEEP: int = Field(default=4, ge=1, le=20)
-    # Set after measuring rerank scores on real queries. None disables the cutoff.
     RERANK_MIN_SCORE: float | None = None
 
+    # Rate limiting
+    RATE_LIMITER_PER_MIN: int = Field(default=5, ge=1)
 
-    CACHE_TTL_SECONDS:int = 7*24*3600
-    CACHE_SIMILARITY:float=Field(.95,ge=0,le=1.0)
+    # Authentication
+    GOOGLE_CLIENT_ID: str
+    ADMIN_EMAILS: str = ""
 
-    RATE_LIMITER_PER_MIN:int=Field(5,ge=1)
+    # Optional application settings if used by backend code
+    API_URL: str = "http://api:8000"
+    API_TOKEN: str = ""
 
-    API_URL:str
-    API_TOKEN:str
 
-    GOOGLE_CLIENT_ID:str
-    GOOGLE_CLIENT_SECRET:str
-    ADMIN_EMAILS:str=""
-    REDIRECT_URI:str
+class FrontendSettings(BaseSettings):
+    """Streamlit configuration."""
 
+    model_config = SettingsConfigDict(**COMMON_CONFIG)
+
+    APP_ENV: str = "development"
+
+    # Backend connection
+    API_URL: str = "http://api:8000"
+    API_TOKEN: str = ""
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: SecretStr
+    REDIRECT_URI: str
+
+    DEV_AUTH_TOKEN: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
+
+@lru_cache(maxsize=1)
+def get_frontend_settings() -> FrontendSettings:
+    return FrontendSettings()
