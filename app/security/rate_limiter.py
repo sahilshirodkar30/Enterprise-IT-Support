@@ -1,26 +1,39 @@
+
 import threading
 import time
-from collections import defaultdict,deque
+from collections import defaultdict, deque
+
 from app.config import get_settings
 
+
 class RateLimiter:
-    def __init__(self,limit:int,window:int=60):
+
+    def __init__(self, limit: int, window: int = 60):
         self.limit = limit
         self.window = window
-        self.hits = dict[str,deque] = defaultdict(deque)
+
+        self.hits: dict[str, deque] = defaultdict(deque)
+
         self._lock = threading.Lock()
 
-    def allow(self,user_id:str) -> bool:
+    def allow(self, user_id: str) -> bool:
         now = time.time()
-        with self._lock():
+
+        with self._lock:
             q = self.hits[user_id]
-            while q and now - q[0] > self.window:
+
+            # Remove expired requests
+            while q and now - q[0] >= self.window:
                 q.popleft()
 
+            # Check rate limit
             if len(q) >= self.limit:
                 return False
 
+            # Record current request
             q.append(now)
+
             return True
+
 
 limiter = RateLimiter(get_settings().RATE_LIMITER_PER_MIN)
