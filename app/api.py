@@ -8,6 +8,7 @@ from app.agents.graph import handle_question
 from app.guardrails.input_guard import MAX_QUESTION_CHARS
 from app.observability import configure_observability
 from services.pinecone_store import ensure_index
+from app.security.auth import User,get_current_user,require_admin
 
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 THREAD_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
@@ -39,34 +40,41 @@ class AskResponse(BaseModel):
     sources: list[str]
 
 
-def verify_token(token: str) -> dict:
-    s = get_settings()
+# def verify_token(token: str) -> dict:
+#     s = get_settings()
 
-    if s.APP_ENV == "development" and s.DEV_AUTH_TOKEN is not None:
-        expected = s.DEV_AUTH_TOKEN.get_secret_value()
-        if expected and hmac.compare_digest(token, expected):
-            return {"sub": s.DEV_USER_ID}
+#     if s.APP_ENV == "development" and s.DEV_AUTH_TOKEN is not None:
+#         expected = s.DEV_AUTH_TOKEN.get_secret_value()
+#         if expected and hmac.compare_digest(token, expected):
+#             return {"sub": s.DEV_USER_ID}
 
-    # Production: replace with real JWT validation against your identity provider.
-    raise ValueError("token rejected")
+#     # Production: replace with real JWT validation against your identity provider.
+#     raise ValueError("token rejected")
 
 
-def get_user_id(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-) -> str:
-    """Resolve the caller from a verified bearer token. Never trust a raw identity header."""
-    if credentials is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing bearer token")
-    try:
-        claims = verify_token(credentials.credentials)
-    except Exception:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token")
+# def get_user_id(
+#     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+# ) -> str:
+#     """Resolve the caller from a verified bearer token. Never trust a raw identity header."""
+#     if credentials is None:
+#         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing bearer token")
+#     try:
+#         claims = verify_token(credentials.credentials)
+#     except Exception:
+#         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token")
 
-    user_id = str(claims.get("sub", "")).strip().lower()
-    if not user_id:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "token has no subject")
-    return user_id
+#     user_id = str(claims.get("sub", "")).strip().lower()
+#     if not user_id:
+#         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "token has no subject")
+#     return user_id
 
+@app.get("/me")
+def get_me(user: User = Depends(get_current_user)):
+    return {
+        "email": user.email,
+        "name": user.name,
+        "role": user.role
+    }
 
 @app.get("/health")
 def health() -> dict:
@@ -74,9 +82,19 @@ def health() -> dict:
 
 #user_id: str = Depends(get_user_id)
 @app.post("/ask", response_model=AskResponse)
-def ask(body: AskRequest, user_id: str = Depends(get_user_id)) -> AskResponse:
+def ask(
+    body: AskRequest,
+    user: User = Depends(get_current_user),
+) -> AskResponse:
+
     thread_id = body.thread_id or uuid4().hex
-    result = handle_question( user_id,body.question, thread_id)
+
+    result = handle_question(
+        user.email,
+        body.question,
+        thread_id,
+    )
+
     return AskResponse(
         thread_id=thread_id,
         answer=result["answer"],

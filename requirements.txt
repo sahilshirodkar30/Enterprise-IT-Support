@@ -38,3 +38,8 @@ pytest
 fastapi
 uvicorn
 logfire[fastapi]
+
+
+python-multipart
+google-auth
+requests

@@ -56,6 +56,14 @@ class Settings(BaseSettings):
 
     RATE_LIMITER_PER_MIN:int=Field(5,ge=1)
 
+    API_URL:str
+    API_TOKEN:str
+
+    GOOGLE_CLIENT_ID:str
+    GOOGLE_CLIENT_SECRET:str
+    ADMIN_EMAILS:str
+    REDIRECT_URI:str
+
 
 
 @lru_cache(maxsize=1)
