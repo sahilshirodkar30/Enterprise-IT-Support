@@ -235,8 +235,14 @@ jobs:
           IMAGE: ${{ steps.image.outputs.image }}
 
           APP_ENV: ${{ secrets.APP_ENV }}
+          API_URL: http://api:8000
           API_TOKEN: ${{ secrets.API_TOKEN }}
           DEV_AUTH_TOKEN: ${{ secrets.DEV_AUTH_TOKEN }}
+
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ADMIN_EMAILS: ${{ vars.ADMIN_EMAILS }}
+          REDIRECT_URI: ${{ vars.REDIRECT_URI }}
 
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
@@ -270,8 +276,13 @@ jobs:
             --network-alias api \
             -p 8000:8000 \
             -e APP_ENV \
+            -e API_URL \
             -e API_TOKEN \
             -e DEV_AUTH_TOKEN \
+            -e GOOGLE_CLIENT_ID \
+            -e GOOGLE_CLIENT_SECRET \
+            -e ADMIN_EMAILS \
+            -e REDIRECT_URI \
             -e AWS_REGION \
             -e AWS_DEFAULT_REGION="$AWS_REGION" \
             -e GROQ_API_KEY \
@@ -295,7 +306,34 @@ jobs:
               --proxy-headers
 
           echo "FastAPI container started"
+    
+      - name: Verify FastAPI Environment
+        run: |
+          set -euo pipefail
 
+          docker exec atlas-enterprise-api python -c "
+          import os
+
+          required = [
+              'API_URL',
+              'GOOGLE_CLIENT_ID',
+              'GOOGLE_CLIENT_SECRET',
+              'ADMIN_EMAILS',
+              'REDIRECT_URI',
+              'API_TOKEN',
+              'PINECONE_API_KEY',
+              'PORTKEY_GATEWAY_API_KEY',
+              'LOGFIRE_API_KEY'
+          ]
+
+          missing = [key for key in required if not os.getenv(key)]
+
+          if missing:
+              print('Missing environment variables:', missing)
+              raise SystemExit(1)
+
+          print('All required environment variables are configured.')
+          "    
       # ----------------------------------------
       # START STREAMLIT FRONTEND
       # ----------------------------------------
@@ -306,6 +344,10 @@ jobs:
           API_URL: http://api:8000
           API_TOKEN: ${{ secrets.API_TOKEN }}
           DEV_AUTH_TOKEN: ${{ secrets.DEV_AUTH_TOKEN }}
+
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          REDIRECT_URI: ${{ vars.REDIRECT_URI }}
 
         run: |
           set -euo pipefail
@@ -318,6 +360,9 @@ jobs:
             -e API_URL \
             -e API_TOKEN \
             -e DEV_AUTH_TOKEN \
+            -e GOOGLE_CLIENT_ID \
+            -e GOOGLE_CLIENT_SECRET \
+            -e REDIRECT_URI \
             "$IMAGE" \
             streamlit run frontend/streamlit_app.py \
               --server.address 0.0.0.0 \
