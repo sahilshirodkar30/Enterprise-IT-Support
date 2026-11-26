@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     CACHE_TTL_SECONDS:int = 7*24*3600
     CACHE_SIMILARITY:float=Field(.95,ge=0,le=1.0)
 
+    RATE_LIMITER_PER_MIN:int=Field(5,ge=1)
+
 
 
 @lru_cache(maxsize=1)

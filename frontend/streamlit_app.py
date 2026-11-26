@@ -2,11 +2,16 @@
 import os
 import uuid
 import html
-
+from dotenv import load_dotenv
 import requests
 import streamlit as st
 
+from pathlib import Path
+from dotenv import load_dotenv
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+# Load project .env
+load_dotenv(PROJECT_ROOT / ".env")
 # --------------------------------------------------
 # Configuration
 # --------------------------------------------------
@@ -201,7 +206,7 @@ def ask_backend(question: str, thread_id: str) -> dict:
         "sources": []
     }
     """
-
+    print("API_TOKEN",API_TOKEN)
     if not API_TOKEN:
         return {
             "answer": "API authentication token is missing. Configure API_TOKEN in your Streamlit environment.",

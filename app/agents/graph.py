@@ -14,6 +14,7 @@ from app.agents.nodes.responder import respond_node
 from app.agents.nodes.retriever import retrieve_node
 from app.agents.state import ChatState
 from app.cache.semantic_cache import cache_get, cache_put
+from app.security.rate_limiter import limiter
 
 MAX_QUESTION_CHARS = 1000
 
@@ -203,6 +204,10 @@ def handle_question(user_id: str, question: str, thread_id: str) -> dict:
         log.warn("question too long", length=len(question), limit=MAX_QUESTION_CHARS)
         return _result(f"Please keep your question shorter than {MAX_QUESTION_CHARS} characters.")
 
+    if not limiter.allow(user_id):
+        log.warn("rate limited", user_id=user_id)
+        return _result("You're asking too fast. Please wait a minute.")
+    
     # Bind the thread to the authenticated user so a client can't write into someone else's history.
     # user_id must come from auth, not from the request body.
     thread_key = f"{user_id}:{thread_id}"

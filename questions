@@ -1,0 +1,63 @@
+1. Basic knowledge retrieval
+1. What is the minimum password length required by company policy?
+2. How can an employee reset their company password?
+3. Which MFA methods are approved?
+4. Where should employees download business software?
+5. What should an employee do if their company laptop is stolen?
+6. Why is VPN required when working outside the office?
+7. What are the four ticket priority levels?
+8. When does an account get temporarily locked?
+2. Troubleshooting questions
+1. My VPN is connected, but I cannot access internal systems. What should I check?
+2. My laptop is running very slowly. What troubleshooting steps should I follow?
+3. I cannot send or receive emails. How can IT diagnose this?
+4. My printer is showing offline. What should I do?
+5. My monitor is not displaying anything, even though my laptop is running.
+6. My application crashes every time I open it. What should I do?
+7. My corporate Wi-Fi keeps disconnecting. How should I troubleshoot it?
+8. My company files are not syncing. What should I check?
+3. Security-related questions
+1. I received a suspicious email asking me to reset my password. What should I do?
+2. I accidentally clicked a phishing link. What are the next steps?
+3. Someone is repeatedly sending me unexpected MFA approval requests. What should I do?
+4. Can I disable endpoint security temporarily to improve laptop performance?
+5. Can I share my MFA code with the IT support team?
+6. What should I do if I suspect malware on my laptop?
+7. What is the procedure for reporting a lost company laptop?
+8. What should I do if company data is accidentally exposed?
+4. Account and access management
+1. My company account is locked after five failed login attempts. How can I recover it?
+2. I joined a new department. How can I request application access?
+3. I need administrator privileges to install software. How can I get approval?
+4. What is the process for providing access to a new employee?
+5. What happens to application access when an employee leaves the company?
+6. What information should I provide when reporting an access-denied error?
+5. Incident management and escalation
+1. What is the difference between P1 and P2 incidents?
+2. A complete department cannot access email. What priority should IT assign?
+3. One employee cannot access an application. What is the appropriate priority?
+4. A company-wide network outage occurs. How should IT handle it?
+5. What information should be included in an escalation ticket?
+6. When should IT escalate an incident instead of continuing individual troubleshooting?
+7. What is the priority for a critical security incident?
+8. Should IT promise a resolution time without confirmation from the responsible team?
+6. Scenario-based questions
+These are particularly useful for testing whether your RAG chatbot can combine information from multiple chunks.
+1. An employee is working remotely, cannot connect to VPN, and cannot access internal applications. Explain the troubleshooting procedure.
+2. An employee cannot log in after repeatedly entering an incorrect password and is also receiving unexpected MFA notifications. What should IT do?
+3. Five employees report that they cannot send emails. Should IT troubleshoot each laptop individually or investigate a wider incident?
+4. An employee reports that their laptop is slow and endpoint security is consuming CPU resources. What should the support team recommend?
+5. An employee lost their laptop while travelling. What immediate actions are required?
+6. A new employee cannot access the company's business application. Explain the access request process.
+7. Several employees cannot print documents from a shared network printer. How should IT investigate?
+8. An employee deleted an important business file and the cloud sync client is not working. What should IT check?
+7. Advanced RAG evaluation questions
+Use these to test whether your chatbot retrieves the correct information instead of generating unsupported answers.
+1. What is the official SLA resolution time for P1 incidents?
+2. What is the company's VPN gateway IP address?
+3. What is the exact password expiration period?
+4. Which ticketing platform does the company use?
+5. What is the company's official backup retention period?
+6. Which team member is responsible for approving administrator access?
+7. What is the company's official data recovery SLA?
+8. What is the name of the company's email server?
