@@ -350,11 +350,22 @@ jobs:
           docker ps
           echo "Enterprise AI deployment completed successfully"
 
+      
       # ----------------------------------------
-      # CLEANUP
+      # CLEANUP OLD DOCKER IMAGES
       # ----------------------------------------
 
-      - name: Clean Unused Docker Images
-        if: always()
+      - name: Cleanup Old Docker Images
+        if: success()
         run: |
-          docker image prune -f
+          set -euo pipefail
+
+          echo "Removing unused Docker images..."
+
+          docker image prune -a -f
+
+          echo "Docker cleanup completed."
+
+          docker system df
+          docker images
+
