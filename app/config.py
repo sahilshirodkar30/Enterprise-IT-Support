@@ -61,7 +61,7 @@ class Settings(BaseSettings):
 
     GOOGLE_CLIENT_ID:str
     GOOGLE_CLIENT_SECRET:str
-    ADMIN_EMAILS:str
+    ADMIN_EMAILS:str=""
     REDIRECT_URI:str
 
 
