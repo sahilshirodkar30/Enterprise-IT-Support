@@ -230,7 +230,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ADMIN_EMAILS: ${{ vars.ADMIN_EMAILS }}
-          REDIRECT_URI: ${{ vars.REDIRECT_URI }}
+          REDIRECT_URI: ${{ secrets.REDIRECT_URI }}
 
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
