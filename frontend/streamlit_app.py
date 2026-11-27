@@ -33,7 +33,7 @@ settings = get_frontend_settings()
 API_URL = settings.API_URL.rstrip("/")
 API_TOKEN = settings.API_TOKEN
 CLIENT_ID = settings.GOOGLE_CLIENT_ID
-CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
+CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET.get_secret_value()
 REDIRECT_URI = settings.REDIRECT_URI
 REQUEST_TIMEOUT = 90
 TITLE_CHARS = 40
@@ -284,10 +284,10 @@ def handle_callback() -> None:
     try:
         response = requests.post(
             "https://oauth2.googleapis.com/token",
-            data={
+            data = {
                 "code": code,
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET.get_secret_value(),
                 "redirect_uri": REDIRECT_URI,
                 "grant_type": "authorization_code",
             },
