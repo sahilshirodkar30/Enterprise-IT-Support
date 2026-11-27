@@ -364,6 +364,7 @@ jobs:
       # START CADDY HTTPS REVERSE PROXY
       # ----------------------------------------
 
+      
       - name: Start Caddy HTTPS Proxy
         run: |
           set -euo pipefail
@@ -378,19 +379,20 @@ jobs:
           docker volume create enterprise_caddy_data
           docker volume create enterprise_caddy_config
 
-          docker run -d \\
-            --name enterprise-caddy \\
-            --restart unless-stopped \\
-            --network atlas-network \\
-            -p 80:80 \\
-            -p 443:443 \\
-            -p 443:443/udp \\
-            -v "$DEPLOY_DIR/Caddyfile:/etc/caddy/Caddyfile:ro" \\
-            -v enterprise_caddy_data:/data \\
-            -v enterprise_caddy_config:/config \\
+          docker run -d \
+            --name enterprise-caddy \
+            --restart unless-stopped \
+            --network atlas-network \
+            -p 80:80 \
+            -p 443:443 \
+            -p 443:443/udp \
+            -v "$DEPLOY_DIR/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v enterprise_caddy_data:/data \
+            -v enterprise_caddy_config:/config \
             caddy:2
 
           echo "Caddy HTTPS proxy started"
+
 
       # ----------------------------------------
       # VERIFY FASTAPI
