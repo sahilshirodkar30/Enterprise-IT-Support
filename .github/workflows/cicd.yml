@@ -100,6 +100,9 @@ jobs:
 
     steps:
 
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Verify EC2 IAM Role
         run: |
           set -euo pipefail
@@ -192,21 +195,6 @@ jobs:
           echo "Docker image pulled successfully"
       
       # ----------------------------------------
-      # PULL DOCKER IMAGE
-      # ----------------------------------------
-
-      - name: Pull Docker Image
-        env:
-          IMAGE: ${{ steps.image.outputs.image }}
-
-        run: |
-          set -euo pipefail
-
-          docker pull "$IMAGE"
-
-          echo "Docker image pulled successfully"
-
-      # ----------------------------------------
       # CREATE DOCKER NETWORK
       # ----------------------------------------
 
@@ -274,7 +262,7 @@ jobs:
             --restart unless-stopped \
             --network atlas-network \
             --network-alias api \
-            -p 8000:8000 \
+            -p 127.0.0.1:8000:8000 \
             -e APP_ENV \
             -e API_URL \
             -e API_TOKEN \
@@ -356,7 +344,8 @@ jobs:
             --name atlas-enterprise-ui \
             --restart unless-stopped \
             --network atlas-network \
-            -p 8501:8501 \
+            --network-alias frontend \
+            -p 127.0.0.1:8501:8501 \
             -e API_URL \
             -e API_TOKEN \
             -e DEV_AUTH_TOKEN \
@@ -370,6 +359,38 @@ jobs:
               --server.headless true
 
           echo "Streamlit container started"
+
+      # ----------------------------------------
+      # START CADDY HTTPS REVERSE PROXY
+      # ----------------------------------------
+
+      - name: Start Caddy HTTPS Proxy
+        run: |
+          set -euo pipefail
+
+          DEPLOY_DIR="$HOME/enterprise-deploy"
+          mkdir -p "$DEPLOY_DIR"
+
+          cp "$GITHUB_WORKSPACE/Caddyfile" "$DEPLOY_DIR/Caddyfile"
+
+          docker rm -f enterprise-caddy || true
+
+          docker volume create enterprise_caddy_data
+          docker volume create enterprise_caddy_config
+
+          docker run -d \\
+            --name enterprise-caddy \\
+            --restart unless-stopped \\
+            --network atlas-network \\
+            -p 80:80 \\
+            -p 443:443 \\
+            -p 443:443/udp \\
+            -v "$DEPLOY_DIR/Caddyfile:/etc/caddy/Caddyfile:ro" \\
+            -v enterprise_caddy_data:/data \\
+            -v enterprise_caddy_config:/config \\
+            caddy:2
+
+          echo "Caddy HTTPS proxy started"
 
       # ----------------------------------------
       # VERIFY FASTAPI
